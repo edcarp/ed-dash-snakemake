@@ -1,0 +1,42 @@
+# This is a Snakemake re-implementation of
+# https://seqera.io/training/#_your_first_script
+
+# Run:
+# $ snakemake -p -j1 -s firstscript_dyn.snake --config op=upper
+#
+# op may be upper, rev, upper.rev or [upper,rev] :-)
+
+greeting = config.get('greeting', 'Hello world!')
+
+# An actual dynamic version.
+def list_output_chunks(wildcards):
+    from hashlib import md5
+    ghash = md5(greeting.encode()).hexdigest()
+    with checkpoints.splitLetters.get(hash=ghash).output[0].open() as fh:
+        chunks = fh.read().split()
+    # Infer aggregate outputs from split list
+    return expand('chunks/{c}.{o}', c=chunks, o=config['op'])
+
+rule showOutput:
+    input: list_output_chunks
+    shell:
+       r"paste -d\\n {input}"
+
+# Convert this to a checkpoint rule to allow dynamic DAG re-evaluation
+# Now the output is a file listing the outputs.
+checkpoint splitLetters:
+    output: 'chunks/{hash}.list'
+    shell:
+       r"(cd chunks ; printf {greeting:q} | split --verbose -b 6 - {wildcards.hash}_ ) | egrep -o '{wildcards.hash}_\w+' > {output}"
+
+rule convertToUpper:
+    output: '{foo}.upper'
+    input:  '{foo}'
+    shell:
+       r"tr '[a-z]' '[A-Z]' < {input} > {output}"
+
+rule convertToRev:
+    output: '{foo}.rev'
+    input:  '{foo}'
+    shell:
+       r"rev {input} > {output}"

@@ -1,0 +1,27 @@
+# This is a Snakemake re-implementation of
+# https://seqera.io/training/#_your_first_script
+
+# Run:
+# $ snakemake -j1 -s firstscript.snake convertToUpper
+
+greeting = 'Hello world!'
+
+# In Snakemake, you generally know the expected output files before you run the
+# rule. In this case, we could precalculate based on len(greeting) but it seems
+# more natural to have the output as a directory. See firstscript_dyn for a version
+# that is actually dynamic.
+
+rule splitLetters:
+    output: directory('chunks')
+    shell:
+        "mkdir chunks ; printf {greeting:q} | split -b 6 - chunks/chunk_"
+
+rule convertToUpper:
+    input: 'chunks'
+    shell:
+        "for f in {input}/* ; do tr '[a-z]' '[A-Z]' <$f ; echo ; done"
+
+rule convertToRev:
+    input: 'chunks'
+    shell:
+        "for f in {input}/* ; do rev $f ; echo ; done"

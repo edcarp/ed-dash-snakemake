@@ -1,0 +1,58 @@
+# In section 7 we actually get to make a pipeline. Let's Snake it!
+
+# NextFlow has parameters, Snakemake has config
+
+# Add some defaults. I didn't bother with variable $outDir but I could add it.
+config.setdefault('reads', "data/ggal/{pair_id}_{readnum}.fq")
+config.setdefault('transcriptome', "data/ggal/transcriptome.fa")
+config.setdefault('multiqc', "multiqc")
+
+# Ex 7.1.1
+# This version actually respects the 'outdir' setting!
+config.setdefault('outdir', "ex7_out")
+
+if config['outdir'] not in ['', '.', './']:
+    os.makedirs(config['outdir'], exist_ok=True)
+
+    # Before changing dir need to resolve the input paths
+    for k in ['reads', 'transcriptome']:
+        config[k] = os.path.abspath(config[k])
+
+    workdir: config['outdir']
+
+# Ex 7.1.2
+from pprint import pprint
+pprint(("Config: ", config))
+
+# Ex 7.2
+# Note1 - I'm ignoring config['outdir'] just now. See section_7_od.snake
+# Note2 - the 'threads' directive sets a maximum. Snakemake will scale down.
+rule index:
+    output: directory("salmon_index")
+    input: config['transcriptome']
+    threads: 8
+    shell:
+       r"salmon index --threads {threads} -t {input} -i {output}"
+
+# Ex 7.4
+# Snakemake implementation of script4.nf
+
+# Tell Snakemake that {readnum} wildcard is always 1 or 2 before asking to find the files.
+wildcard_constraints:
+    readnum = "[12]"
+
+reads_in = glob_wildcards(config['reads'])
+
+rule quantification:
+    output: directory("{pair_id}.quant")
+    input:
+        reads = expand(config['reads'], readnum=['1','2'], allow_missing=True),
+        index = "salmon_index"
+    threads: 8
+    shell:
+        r"salmon quant --threads {threads} --libType=U -i {input.index} -1 {input.reads[0]} -2 {input.reads[1]} -o {output}"
+
+# Rule to generate all quantification
+rule all_quant:
+    input: expand("{pair_id}.quant", pair_id=reads_in.pair_id)
+

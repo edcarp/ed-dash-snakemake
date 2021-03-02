@@ -1,0 +1,18 @@
+# This Snakefile relates to https://seqera.io/training/#_input_repeaters
+# It assumes you have t_coffee installed.
+
+# Version using glob_wildcards.
+input_pattern = "data/prots/{seq}.tfa"
+methods = ['regular', 'expresso', 'psicoffee']
+
+rule alignAll:
+    input:
+        expand("t_coffee_{method}_{seq}.out", method = methods,
+                                              seq = glob_wildcards(input_pattern).seq)
+
+rule alignSequence:
+    output: "t_coffee_{method}_{seq}.out"
+    input:  input_pattern
+    shell:
+        # I can't get T-Coffee to work! But snakemake is fine
+        "t_coffee -in {input} -mode {wildcards.method}"

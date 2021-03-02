@@ -1,0 +1,48 @@
+# vim: ft=python
+
+samples = ["6991"]
+kmers = [19, 21, 23, 25, 27, 29, 31]
+
+localrules: all_kmer_stats
+rule all_kmer_stats:
+  input:
+    expand("{s}_cutadapt_paired_k{k}_contigs_stats.txt", s=samples, k=kmers)
+  output:
+    "all_stats.txt"
+  shell:
+    "grep -H 'contig N/L50' {input} > {output}"
+
+rule cutadapt:
+  output:
+    read1 = "{sample}_cutadapt_1.fastq",
+    read2 = "{sample}_cutadapt_2.fastq"
+  input:
+    read1 = "{sample}_1.fastq",
+    read2 = "{sample}_2.fastq"
+  params:
+    adapter = "AGATCGGAAGAGC"
+  shell: """cutadapt -a {params.adapter} -A {params.adapter} \
+            -o {output.read1} -p {output.read2} \
+            {input.read1} {input.read2}
+		 """
+
+rule assemble:
+  output: "{sample}_paired_k{kmer}_contigs.fa"
+  input:
+    read1 = "{sample}_1.fastq",
+    read2 = "{sample}_2.fastq"
+  shadow: "shallow"
+  shell:
+    """velveth velvet_out {wildcards.kmer} \
+         -shortPaired -fastq -separate \
+         {input.read1} {input.read2}
+       velvetg velvet_out
+       mv velvet_out/contigs.fa {output}
+    """
+
+rule stats:
+  output: "{assem}_contigs_stats.txt"
+  input:  "{assem}_contigs.fa"
+  shell:
+    "stats.sh {input} > {output}"
+
