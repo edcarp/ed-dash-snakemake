@@ -1,9 +1,11 @@
 # vim: ft=python
 
-samples = ["6991"]
+# snakemake -p -j4
+
+samples = ["SRR4204500"]
 kmers = [19, 21, 23, 25, 27, 29, 31]
 
-localrules: all_kmer_stats
+localrules: all_kmer_stats, download_fastq
 rule all_kmer_stats:
   input:
     expand("{s}_cutadapt_paired_k{k}_contigs_stats.txt", s=samples, k=kmers)
@@ -21,10 +23,11 @@ rule cutadapt:
     read2 = "{sample}_2.fastq"
   params:
     adapter = "AGATCGGAAGAGC"
-  shell: """cutadapt -a {params.adapter} -A {params.adapter} \
-            -o {output.read1} -p {output.read2} \
-            {input.read1} {input.read2}
-		 """
+  shell:
+   r"""cutadapt -a {params.adapter} -A {params.adapter} \
+          -o {output.read1} -p {output.read2} \
+          {input.read1} {input.read2}
+    """
 
 rule assemble:
   output: "{sample}_paired_k{kmer}_contigs.fa"
@@ -33,7 +36,7 @@ rule assemble:
     read2 = "{sample}_2.fastq"
   shadow: "shallow"
   shell:
-    """velveth velvet_out {wildcards.kmer} \
+   r"""velveth velvet_out {wildcards.kmer} \
          -shortPaired -fastq -separate \
          {input.read1} {input.read2}
        velvetg velvet_out
@@ -46,3 +49,14 @@ rule stats:
   shell:
     "stats.sh {input} > {output}"
 
+# Convenience rule to download the FASTQ to assemble
+rule download_fastq:
+    output: "{sample}_1.fastq", "{sample}_2.fastq"
+    wildcard_constraints:
+        sample = r"[A-Z0-9]+"
+    params:
+        baseurl = "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR420/000"
+    shell:
+     r"""wget {params.baseurl}/{wildcards.sample}/{wildcards.sample}_{{1,2}}.fastq.gz
+         gunzip {wildcards.sample}_{{1,2}}.fastq.gz
+      """

@@ -7,3 +7,6 @@ __pycache__
 *.touch
 
 .snakemake
+
+SRR4204500_*.fastq
+SRR4204500_*.fa
