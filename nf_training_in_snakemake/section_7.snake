@@ -12,7 +12,7 @@ config.setdefault('outdir', "ex7_out")
 
 # If the 'outdir' setting is set we have to make it so...
 if config['outdir'] not in ['', '.', './']:
-    os.makedirs(config['outdir'])
+    os.makedirs(config['outdir'], exist_ok=True)
 
     # Before changing dir need to resolve the input paths
     for k in ['reads', 'transcriptome']:

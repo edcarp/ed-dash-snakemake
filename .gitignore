@@ -10,3 +10,7 @@ __pycache__
 
 SRR4204500_*.fastq
 SRR4204500_*.fa
+SRR4204500_*_stats.txt
+
+/nf_training_in_snakemake/data
+/nf_training_in_snakemake/nf_training_data
