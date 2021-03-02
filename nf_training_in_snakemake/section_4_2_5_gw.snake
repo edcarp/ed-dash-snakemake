@@ -1,7 +1,7 @@
 # This Snakefile relates to https://seqera.io/training/#_input_repeaters
 # It assumes you have t_coffee installed.
 
-# Version using glob_wildcards.
+# Version using glob_wildcards. Maybe this is working better in newer versions of Snakemake?
 input_pattern = "data/prots/{seq}.tfa"
 methods = ['regular', 'expresso', 'psicoffee']
 

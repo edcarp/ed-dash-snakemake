@@ -8,9 +8,10 @@ __pycache__
 
 .snakemake
 
-SRR4204500_*.fastq
-SRR4204500_*.fa
-SRR4204500_*_stats.txt
+/assembly_snakefile/SRR4204500_*.fastq
+/assembly_snakefile/SRR4204500_*.fa
+/assembly_snakefile/SRR4204500_*_stats.txt
+/assembly_snakefile/all_stats.txt
 
 /nf_training_in_snakemake/data
 /nf_training_in_snakemake/nf_training_data
