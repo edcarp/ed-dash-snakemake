@@ -1,0 +1,64 @@
+# vim: ft=python
+# snakemake -p -j1
+
+"""This tries to recreate the input files for the course. See note.md for
+   details.
+"""
+
+samples = { "SRR636272": "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR636" }
+
+tissues = [ 'gut', 'liver', 'lung', 'liver2', 'gut2', 'lung2' ]
+#reads_per_lib = [2937] * len(tissues)
+
+# Let's have some variation in the numbers of reads. Note the random seed MUST
+# be fixed because Snakemake might evaluate this file more than once.
+from random import randrange, seed
+seed(42, version=2)
+reads_per_lib = [ randrange(2800, 3200) for _ in tissues ]
+
+
+# What we want to get
+rule main:
+    input: expand('{tissue}_{rn}.fq', tissue=tissues, rn=[1,2])
+
+# Split the fastq into tissues. Inefficient but neater to implement.
+rule splitout_fastq:
+    output: '{tissue}_{rn}.fq'
+    wildcard_constraints:
+        rn = r"[12]"
+    input:  list(samples)[0] + '_top' + str(sum(reads_per_lib)) + '_{rn}.fastq'
+    run:
+        idx_from = sum(reads_per_lib[:tissues.index(wildcards.tissue)]) * 4
+        idx_to   = sum(reads_per_lib[:tissues.index(wildcards.tissue)+1]) * 4
+
+        print("Extracting lines to {}: {}".format(output, [idx_from, idx_to]))
+        # So maybe use sed. Need to tweak the index numbers
+        idx_from_1 = idx_from + 1
+        shell("sed -n '{idx_from_1},{idx_to}p' < {input} > {output}")
+
+# General to download paired-end FASTQ from SRA
+rule download_fastq:
+    output: "{sample}_1.fastq.gz", "{sample}_2.fastq.gz"
+    wildcard_constraints:
+        sample = r"[A-Z0-9]+"
+    params:
+        baseurl = lambda wc: samples[wc.sample]
+    shell:
+     r"""wget {params.baseurl}/{wildcards.sample}/{wildcards.sample}_{{1,2}}.fastq.gz
+      """
+
+# When we only need the start of the file...
+rule download_part_fastq:
+    output: "{sample}_top{numseqs}_{rn}.fastq"
+    wildcard_constraints:
+        sample  = r"[A-Z0-9]+",
+        numseqs = r"[0-9]+",
+        rn      = r"[12]"
+    params:
+        baseurl  = lambda wc: samples[wc.sample],
+        numlines = lambda wc: int(wc.numseqs) * 4
+    shell:
+     r"""set +o pipefail
+         wget -O- {params.baseurl}/{wildcards.sample}/{wildcards.sample}_{wildcards.rn}.fastq.gz | \
+            zcat | head -n {params.numlines} > {output}
+      """

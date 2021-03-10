@@ -15,3 +15,7 @@ __pycache__
 
 /nf_training_in_snakemake/data
 /nf_training_in_snakemake/nf_training_data
+
+/nf_training_data_ggal_remake/*.gz
+/nf_training_data_ggal_remake/*.fastq
+/nf_training_data_ggal_remake/*.fq
