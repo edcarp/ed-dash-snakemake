@@ -1,7 +1,10 @@
 # ed-dash-snakemake
 Work in progress for Snakemake course
 
-The actual course, formatted for carpentries, will go into the carpentries incubator.
+The actual course, formatted for carpentries, will go into the carpentries incubator...
+
+Now done:
+https://github.com/carpentries-incubator/snakemake-novice-bioinformatics
 
 This repo is for sharing test stuff with the workflows group.
 
